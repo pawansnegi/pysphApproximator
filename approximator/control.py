@@ -156,21 +156,24 @@ class Approximator(Application):
         if self.dim == 3:
             x, y, z = np.meshgrid(_x, _x, _x)
 
+        x, y, z = [t.ravel() for t in (x, y, z)]
+
         if self.rand == 1:
             if self.dim  > 0:
-                x += 0.2 * (np.random.random(len(x)) - 0.5)/0.5 * dx
+                x += 0.1 * (np.random.random(len(x)) + 0.5)/0.5 * dx
             if self.dim > 1:
-                y += 0.2 * (np.random.random(len(x)) - 0.5)/0.5 * dx
+                y += 0.1 * (np.random.random(len(x)) + 0.5)/0.5 * dx
             if self.dim > 2:
-                z += 0.2 * (np.random.random(len(x)) - 0.5)/0.5 * dx
+                z += 0.1 * (np.random.random(len(x)) + 0.5)/0.5 * dx
         elif self.rand == 2:
             if self.dim == 2:
-                filename = '%d_tg.npz'%self.options.N
+                filename = 'nx%d.npz'%self.options.N
                 dirname = os.path.dirname(os.path.abspath(__file__))
                 print(dirname)
-                datafile = os.path.join(os.path.dirname(dirname), 'data', filename)
+                datafile = os.path.join(dirname, 'data', filename)
                 print(datafile)
                 if os.path.exists(datafile):
+                    print('here')
                     data = np.load(datafile)
                     x = data['x']
                     y = data['y']
@@ -181,7 +184,6 @@ class Approximator(Application):
                 print("Packing for %d dimension is absent"%self.dim)
                 sys.exit(0)
 
-        x, y, z = [t.ravel() for t in (x, y, z)]
 
         # Source setup
         h = np.ones_like(x)*dx*self.hdx

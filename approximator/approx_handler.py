@@ -12,7 +12,6 @@ import numpy as np
 home = os.path.expanduser("~")
 base_dir = os.path.join(home, ".sphapprox")
 thispath = os.path.dirname(os.path.abspath(__file__))
-print(thispath)
 
 RESOLUTIONS = [50, 100, 200, 250, 400, 500]
 DIMENSION = {'1D':1, '2D':2, '3D':3}
@@ -35,17 +34,9 @@ class ApproxHandler(Handler):
         Handler.setattr(self, info, object, name, value)
         info.object._updated = True
 
-    def object_ui_changed(self, info):
-        if info.initialized:
-            info.ui.title += "*"
-
-    def object_hdx_cp_changed(self, info):
-        print("hdx changedi")
-
     def _enable_vis(self, info):
         if not is_dir_empty():
             listdir = os.listdir(base_dir)
-            print(info.object.trait_names())
             info.object.values = listdir
 
 
@@ -60,7 +51,6 @@ class ApproxHandler(Handler):
         periodic = info.periodic.value
         norm = info.norm.value
 
-        print(hdx, dim, method, pert, derv, periodic, norm)
         filename = "_".join([method,dim,pert,derv,periodic,norm,"%.2f"%hdx])
         path = os.path.join(base_dir, filename)
         if os.path.exists(path):
@@ -69,6 +59,17 @@ class ApproxHandler(Handler):
             os.mkdir(path)
             self.run_cases(info, hdx, dim, method, pert, derv, periodic, norm, path)
         self._enable_vis(info)
+
+    def _get_method_name(self, info, method):
+        if method == 'custom':
+            filename = info.custom_file.value
+            methodname = info.methodname.value
+            shutil.copy(filename, os.path.join(thispath, 'custom.py'))
+            if (len(methodname) == 0):
+                print("method name is set custom as methodName was missing")
+                return method
+            return methodname
+        return method
 
     def run_cases(self, info, hdx, dim, method, pert, derv, periodic, norm, dirpath):
         if method == 'custom':
@@ -84,12 +85,11 @@ class ApproxHandler(Handler):
 
         for res in resolutions:
             _command = command + ' --N ' + str(res) + ' -d ' + os.path.join(dirpath, 'nx%d'%res)
-            print(_command.split(" "))
+            print(_command)
             subprocess.call(_command.split(" "))
             print("Done")
 
     def object_reset_changed(self, info):
-        print("reset")
         listdir = os.listdir(base_dir)
         if len(listdir) > 0:
             for file in listdir:
@@ -103,7 +103,6 @@ class ApproxHandler(Handler):
             from matplotlib import pyplot as plt
             listdir = os.listdir(base_dir)
             norm = info.norm.value
-            print(norm)
             error = None
             for file in listdir:
                 path = os.path.join(base_dir, file)
@@ -123,7 +122,6 @@ class ApproxHandler(Handler):
                     elif norm == 'linf':
                         err = max(abs(fc-fe))
                     error.append(err)
-                print(error, res)
                 plt.loglog(RESOLUTIONS, error, label=label)
 
             res = np.array(RESOLUTIONS)
@@ -149,10 +147,8 @@ class ApproxHandler(Handler):
         y = data['y']
         z = data['z']
         fc = data['fc']
-        print(info.scene, info.trait_names(), info.object.scene)
         scene = info.object.scene
         scene.mlab.clf()
         out = scene.mlab.points3d(x, y, z, fc, scale_factor=0.01, scale_mode='none')
-        print(out)
         scene.mlab.show()
 
