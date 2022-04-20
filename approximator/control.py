@@ -91,11 +91,14 @@ class Approximator(Application):
 
     def _get_approx(self):
         if self.use_sph == 'stan':
-            from approx.standard import Stand
-            self.approx = Stand()
+            import approx.standard as stn
+            self.approx = stn
+        if self.use_sph == 'order1':
+            import approx.order1 as order1
+            self.approx = order1
         elif self.use_sph == 'custom':
-            from custom import Custom
-            self.approx = Custom()
+            import custom as cst
+            self.approx = cst
 
 
     def get_function(self, x, y, z):
@@ -188,36 +191,6 @@ class Approximator(Application):
         fluid = get_particle_array(name="fluid", x=x, y=y, z=z, h=h, m=m, rho=rho, exact=0)
         return fluid
 
-    def _get_solid(self):
-        L = self.L
-        dx = self.dx
-        nl = 6 * dx
-
-        x, y, z = None, None, None
-        _x = np.arange(dx / 2 - nl, L+nl, dx)
-        _y = np.zeros_like(_x)
-
-        if self.dim == 2:
-            x = _x.copy()
-            y = np.zeros_like(x)
-            z = np.zeros_like(x)
-        if self.dim == 2:
-            x, y = np.meshgrid(_x, _x)
-            z = np.zeros_like(x)
-        if self.dim == 3:
-            x, y, z = np.meshgrid(_x, _x, _x)
-
-        cond = (x>0) & (x<L) & (y>0) & (y<L) & (z>0) & (z<L)
-        cond = ~cond
-
-        h = np.ones_like(x)*dx*self.hdx
-        rho = np.ones_like(x)
-        m = rho*dx**(self.dim)
-
-        solid = get_particle_array(name="solid", x=x[cond], y=y[cond], z=z[cond], h=h, m=m, rho=rho, exact=0)
-        self.sources.append('solid')
-        return solid
-
     def _add_properties(self, particles):
         props = None
         props = self.approx.get_props()
@@ -237,13 +210,9 @@ class Approximator(Application):
             pa.exact[:] = self.get_function(x, y, z)
             pa.add_output_arrays(output_props)
 
-
     def create_particles(self):
         hdx = self.hdx
         particles = [self._get_fluid()]
-
-        if self.periodic:
-            particles.append(self._get_solid())
 
         self._add_properties(particles)
 
@@ -266,7 +235,7 @@ class Approximator(Application):
 
     def create_equations(self):
         eqns = None
-        eqns = self.approx.get_equations(self.dest, self.sources, self.derv)
+        eqns = self.approx.get_equations(self.dest, self.sources, self.derv, self.dim)
 
         print(eqns)
         return eqns

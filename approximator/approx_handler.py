@@ -1,6 +1,7 @@
 
 from prometheus_client import Enum
 from traitsui.api import Handler, ViewHandler
+from traits.api import List
 import os
 import subprocess
 import shutil
@@ -15,7 +16,9 @@ print(thispath)
 
 RESOLUTIONS = [50, 100, 200, 250, 400, 500]
 DIMENSION = {'1D':1, '2D':2, '3D':3}
-SPH_MEHTOD = { 'standard':'stan' , 'custom':'custom'}
+SPH_MEHTOD = { 'standard':'stan' ,
+               'order1':'order1',
+               'custom':'custom'}
 PERTURB = { 'no':0, 'perturb':1, 'pack':2}
 PERIODIC = {'No':0, "Yes":1}
 DERIVATIVES = {'Function':0, 'gradient':1, 'Laplacian':2, 'divergence':3}
@@ -42,10 +45,8 @@ class ApproxHandler(Handler):
     def _enable_vis(self, info):
         if not is_dir_empty():
             listdir = os.listdir(base_dir)
-            # print()
-            # for file in listdir:
-            #     if file not in info.runs.value:
-            #         info.runs.value.append(file)
+            print(info.object.trait_names())
+            info.object.values = listdir
 
 
     def object_run_changed(self, info):
@@ -95,6 +96,7 @@ class ApproxHandler(Handler):
                 path = os.path.join(base_dir, file)
                 print('removed %s'%path)
                 shutil.rmtree(path)
+                info.object.values = []
 
     def object_plot_changed(self, info):
         if not is_dir_empty():
@@ -137,25 +139,20 @@ class ApproxHandler(Handler):
             print("No runs found!")
 
     def object_render_changed(self, info):
-        print('render clicked')
-        file_type = r'/*'
-        files = glob.glob(base_dir + file_type)
-        if len(files) == 0:
-            print("No runs present!")
-        else:
-            maxfile = max(files, key=os.path.getctime)
-            path = os.path.join(maxfile, 'nx100')
-            datafile = os.path.join(path, 'results.npz')
-            data = np.load(datafile)
-            x = data['x']
-            y = data['y']
-            z = data['z']
-            fc = data['fc']
-            print(info.scene, info.trait_names(), info.object.scene)
-            scene = info.object.scene
-            scene.mlab.clf()
-            # out = scene.mlab.pipeline.scalar_scatter(x, y, z, fc)
-            out = scene.mlab.points3d(x, y, z, fc, scale_factor=0.01, scale_mode='none')
-            print(out)
-            scene.mlab.show()
+        res = info.resolutions.value
+        case = info.runs.value
+        fullpath = os.path.join(base_dir, case)
+        path = os.path.join(fullpath, 'nx'+res)
+        datafile = os.path.join(path, 'results.npz')
+        data = np.load(datafile)
+        x = data['x']
+        y = data['y']
+        z = data['z']
+        fc = data['fc']
+        print(info.scene, info.trait_names(), info.object.scene)
+        scene = info.object.scene
+        scene.mlab.clf()
+        out = scene.mlab.points3d(x, y, z, fc, scale_factor=0.01, scale_mode='none')
+        print(out)
+        scene.mlab.show()
 

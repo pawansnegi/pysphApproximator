@@ -1,6 +1,5 @@
 from pysph.sph.equation import Equation, Group
 from pysph.sph.basic_equations import SummationDensity
-from .approx import Approx
 
 
 class SPH(Equation):
@@ -25,18 +24,17 @@ class SPHDerivative(Equation):
         d_fx[3 *d_idx+2] += s_exact[s_idx]*DWIJ[2]*s_m[s_idx]/s_rho[s_idx]
 
 
-class Stand(Approx):
-    def get_props(self):
-        return ['f', 'exact', {'name':'fx', 'stride':3}]
+def get_props():
+    return ['f', 'exact', {'name':'fx', 'stride':3}]
 
-    def get_equations(self, dest, sources, derv=0):
-        eqns = []
+def get_equations(dest, sources, derv=0, dim=2):
+    eqns = []
+    eqns.append(
+        Group(equations=[SummationDensity(dest=dest, sources=sources)], update_nnps=True))
+    if derv == 0:
+        eqns.append(Group(equations=[SPH(dest=dest, sources=sources)]))
+    elif derv == 1:
         eqns.append(
-            Group(equations=[SummationDensity(dest=dest, sources=sources)], update_nnps=True))
-        if derv == 0:
-            eqns.append(Group(equations=[SPH(dest=dest, sources=sources)]))
-        elif derv == 1:
-            eqns.append(
-                Group(equations=[SPHDerivative(dest=dest, sources=sources)]))
-        return eqns
+            Group(equations=[SPHDerivative(dest=dest, sources=sources)]))
+    return eqns
 

@@ -21,6 +21,7 @@ def is_dir_empty():
 class ApproximationUI(HasTraits):
 
     scene = Instance(MlabSceneModel, args=())
+    values = List([])
 
     hdx_cp = Float(1.2)
     dimension_cp = Enum(*DIMENSION.keys())
@@ -35,7 +36,7 @@ class ApproximationUI(HasTraits):
     plot = Button("Plot")
     reset = Button("Reset")
 
-    runs = Enum(" ")
+    runs = Enum(values='values')
     resolutions = Enum('50', '100', '200', '250', '500')
     render = Button()
 
@@ -45,23 +46,23 @@ class ApproximationUI(HasTraits):
                 Group(
                     Item(name='sph_method', label='Approximation method', springy=True),
                     Item(name="methodname", label="Custom name", springy=True,
-                         enabled_when="sph_method.value == 'custom'"),
+                         enabled_when="sph_method == 'custom'"),
                     Item(name="custom_file", show_label=False, springy=True,
-                         enabled_when="sph_method.value == 'custom'"),
+                         enabled_when="sph_method == 'custom'"),
                     show_border=True, orientation='horizontal', columns=2),
                 Item(name='hdx_cp', label='Scaling parameter', springy=True),
-                Item(name='dimension_cp',
+                Item(name='dimension_cp', style='custom',
                      label='Problem dimension',
                      springy=True),
-                Item(name='perturb', label='Mesh kind', springy=True),
-                Item(name='derv', label='Operator', springy=True),
-                Item(name='periodic', label='Is periodic', springy=True),
-                Item(name='norm', label='Norm', springy=True),
+                Item(name='perturb', label='Mesh kind',  style='custom', springy=True),
+                Item(name='derv', label='Operator', style='custom', springy=True),
+                Item(name='periodic', label='Is periodic', style='custom', springy=True),
+                Item(name='norm', label='Norm', style='custom', springy=True),
                 Group(Item(name="run", show_label=False, springy=True),
                       Item(name="plot",
                            show_label=False,
                            springy=True,
-                           enabled_when='len(runs.values) > 0'),
+                           enabled_when='len(values) > 0'),
                       show_border=True,
                       layout='split',
                       orientation='horizontal'),
@@ -69,11 +70,11 @@ class ApproximationUI(HasTraits):
                 show_border=True,
             ),
             Group(
-                Group(Item(name='runs', springy=True, style='custom'),
+                Group(Item(name='runs', springy=True),
                       Item('resolutions', springy=True),
                       Item('render',
                            springy=True,
-                           enabled_when='len(runs.values) > 0'),
+                           enabled_when='len(values) > 0'),
                       layout='split',
                       orientation='horizontal'),
                 Item(name='scene',
