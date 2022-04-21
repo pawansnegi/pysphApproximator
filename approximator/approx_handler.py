@@ -11,6 +11,8 @@ import numpy as np
 
 home = os.path.expanduser("~")
 base_dir = os.path.join(home, ".sphapprox")
+if not os.path.exists(base_dir):
+    os.mkdir(base_dir)
 thispath = os.path.dirname(os.path.abspath(__file__))
 
 RESOLUTIONS = [50, 100, 200, 250, 400, 500]
