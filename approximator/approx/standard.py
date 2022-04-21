@@ -36,5 +36,7 @@ def get_equations(dest, sources, derv=0, dim=2):
     elif derv == 1:
         eqns.append(
             Group(equations=[SPHDerivative(dest=dest, sources=sources)]))
+    else:
+        raise NotImplementedError
     return eqns
 

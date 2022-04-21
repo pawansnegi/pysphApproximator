@@ -3,11 +3,13 @@ import os
 import numpy as np
 from traits.api import HasTraits, Instance, Str, Int, Float, Bool, List, File
 from traits.api import Range, Enum, Button
-from traitsui.api import Item, View, Group, HSplit, VSplit, CheckListEditor
+from traitsui.api import Item, View, Group, HSplit, VSplit, CheckListEditor, CodeEditor
 from mayavi.core.ui.api import MayaviScene, MlabSceneModel
 from mayavi.core.ui.api import SceneEditor
+
 from approx_handler import (
-    ApproxHandler, DIMENSION, DERIVATIVES, SPH_MEHTOD, PERIODIC, PERTURB)
+    CodeEditorHandler, ApproxHandler,
+    DIMENSION, DERIVATIVES, SPH_MEHTOD, PERIODIC, PERTURB)
 
 home = os.path.expanduser("~")
 base_dir = os.path.join(home, ".sphapprox")
@@ -18,16 +20,35 @@ def is_dir_empty():
         return True
     return False
 
+class EditCode(HasTraits):
+    filepath = Str()
+    codeeditor = Str()
+    save = Button('Save')
+    close = Button('Close')
+
+    view = View(
+        Item(name='codeeditor', show_label=False, editor=CodeEditor()),
+        Group(
+            Item(name='save', show_label=False),
+            Item(name='close', show_label=False),
+            orientation='horizontal'
+        ),
+        handler=CodeEditorHandler()
+    )
+
 class ApproximationUI(HasTraits):
 
+    _codeEditor = EditCode()
     scene = Instance(MlabSceneModel, args=())
     values = List([])
 
     hdx_cp = Float(1.2)
+    frac = Float(0.1)
     dimension_cp = Enum(*DIMENSION.keys())
     sph_method = Enum(*SPH_MEHTOD.keys())
     custom_file = File("", exists=True, filter=['*.py'])
     methodname = Str()
+    editcode = Button("Edit code")
     perturb = Enum(*PERTURB.keys())
     derv = Enum(*DERIVATIVES.keys())
     periodic = Enum(*PERIODIC.keys())
@@ -35,16 +56,19 @@ class ApproximationUI(HasTraits):
     run = Button("Run")
     plot = Button("Plot")
     reset = Button("Reset")
+    remove = Button("Remove")
 
     runs = Enum(values='values')
     resolutions = Enum('50', '100', '200', '250', '500')
     render = Button()
+
 
     view = View(Group(
         HSplit(
             Group(
                 Group(
                     Item(name='sph_method', label='Approximation method', springy=True),
+                    Item(name='editcode', show_label=False),
                     Item(name="methodname", label="Custom name", springy=True,
                          enabled_when="sph_method == 'custom'"),
                     Item(name="custom_file", show_label=False, springy=True,
@@ -54,7 +78,13 @@ class ApproximationUI(HasTraits):
                 Item(name='dimension_cp', style='custom',
                      label='Problem dimension',
                      springy=True),
-                Item(name='perturb', label='Mesh kind',  style='custom', springy=True),
+                Group(
+                    Item(name='perturb', label='Mesh kind',  style='custom'),
+                    Item(name="frac", label='fraction', enabled_when='perturb == "perturb"'),
+                    orientation='horizontal',
+                    show_border=True,
+                    layout='split',
+                ),
                 Item(name='derv', label='Operator', style='custom', springy=True),
                 Item(name='periodic', label='Is periodic', style='custom', springy=True),
                 Item(name='norm', label='Norm', style='custom', springy=True),
@@ -69,10 +99,11 @@ class ApproximationUI(HasTraits):
                 Item(name='reset', show_label=False),
                 show_border=True,
             ),
-            Group(
+            VSplit(
                 Group(Item(name='runs', springy=True),
+                      Item('remove', springy=True, show_label=False),
                       Item('resolutions', springy=True),
-                      Item('render',
+                      Item('render', show_label=False,
                            springy=True,
                            enabled_when='len(values) > 0'),
                       layout='split',
@@ -81,8 +112,8 @@ class ApproximationUI(HasTraits):
                      editor=SceneEditor(scene_class=MayaviScene),
                      show_label=False,
                      resizable=True,
-                     height=200,
-                     width=400)))),
+                     height=400,
+                     width=400)), )),
                 resizable=True,
                 title='Approximator',
                 handler=ApproxHandler())

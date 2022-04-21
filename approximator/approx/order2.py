@@ -1,3 +1,4 @@
+
 #customized quintic
 
 from math import pi
@@ -216,7 +217,7 @@ def get_equations(dest, sources, derv=0, dim=2):
     from pysph.sph.equation import Group
     from pysph.tools.sph_evaluator import SPHEvaluator
     from pysph.base.kernels import QuinticSpline
-    
+
     eqns = []
 
     if not(dim==2):

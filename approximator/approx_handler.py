@@ -17,7 +17,9 @@ RESOLUTIONS = [50, 100, 200, 250, 400, 500]
 DIMENSION = {'1D':1, '2D':2, '3D':3}
 SPH_MEHTOD = { 'standard':'stan' ,
                'order1':'order1',
-               'custom':'custom'}
+               'order2':'order2',
+               'cleary':'cleary',
+               'custom':'custom',}
 PERTURB = { 'no':0, 'perturb':1, 'pack':2}
 PERIODIC = {'No':0, "Yes":1}
 DERIVATIVES = {'Function':0, 'gradient':1, 'Laplacian':2, 'divergence':3}
@@ -34,11 +36,13 @@ class ApproxHandler(Handler):
         Handler.setattr(self, info, object, name, value)
         info.object._updated = True
 
+    def init(self, info):
+        self._enable_vis(info)
+
     def _enable_vis(self, info):
         if not is_dir_empty():
             listdir = os.listdir(base_dir)
             info.object.values = listdir
-
 
     def object_run_changed(self, info):
         if not os.path.exists(base_dir):
@@ -48,46 +52,58 @@ class ApproxHandler(Handler):
         method = info.sph_method.value
         pert = info.perturb.value
         derv = info.derv.value
+        frac = info.frac.value
         periodic = info.periodic.value
         norm = info.norm.value
 
-        filename = "_".join([method,dim,pert,derv,periodic,norm,"%.2f"%hdx])
+        methodname = self._get_method_name(info, method)
+        filename = "_".join([methodname,dim,pert,derv,periodic,norm,"%.2f"%frac,"%.2f"%hdx])
         path = os.path.join(base_dir, filename)
+        complete = False
         if os.path.exists(path):
             print("run already performed in path %s"%path)
         else:
             os.mkdir(path)
-            self.run_cases(info, hdx, dim, method, pert, derv, periodic, norm, path)
-        self._enable_vis(info)
+            complete = self.run_cases(info, hdx, dim, method, pert, derv, periodic, norm, frac, path)
+
+        if complete:
+            self._enable_vis(info)
 
     def _get_method_name(self, info, method):
         if method == 'custom':
-            filename = info.custom_file.value
             methodname = info.methodname.value
-            shutil.copy(filename, os.path.join(thispath, 'custom.py'))
             if (len(methodname) == 0):
-                print("method name is set custom as methodName was missing")
+                print("method name is set 'custom' as methodName was missing")
                 return method
             return methodname
         return method
 
-    def run_cases(self, info, hdx, dim, method, pert, derv, periodic, norm, dirpath):
-        if method == 'custom':
-            filename = info.custom_file.value
-            methodname = info.methodname.value
-            shutil.copy(filename, os.path.join(thispath, 'custom.py'))
-
+    def run_cases(self, info, hdx, dim, method, pert, derv, periodic, norm, frac, dirpath):
         resolutions = RESOLUTIONS
         command = 'python control.py --openmp --dim ' + str(DIMENSION[dim]) + ' --hdx ' + str(hdx) +\
             ' --use-sph ' + SPH_MEHTOD[method] + ' --perturb ' + str(PERTURB[pert]) +\
             ' --derv ' + str(DERIVATIVES[derv]) + ' --periodic ' + str(PERIODIC[periodic]) +\
-            ' --norm ' + norm
+            ' --norm ' + norm + ' --frac ' + str(frac)
 
         for res in resolutions:
             _command = command + ' --N ' + str(res) + ' -d ' + os.path.join(dirpath, 'nx%d'%res)
             print(_command)
-            subprocess.call(_command.split(" "))
+            out = subprocess.call(_command.split(" "))
+            if not (out == 0):
+                print("One of the option is not valid...")
+                shutil.rmtree(dirpath)
+                return False
             print("Done")
+        return True
+
+    def object_custom_file_changed(self, info):
+        method = info.sph_method.value
+        if method == 'custom':
+            filename = info.custom_file.value
+            if not len(filename) == 0:
+                newpath = os.path.join(thispath, 'custom.py')
+                shutil.copy(filename, newpath)
+
 
     def object_reset_changed(self, info):
         listdir = os.listdir(base_dir)
@@ -152,3 +168,44 @@ class ApproxHandler(Handler):
         out = scene.mlab.points3d(x, y, z, fc, scale_factor=0.01, scale_mode='none')
         scene.mlab.show()
 
+    def object_editcode_changed(self, info):
+        print('edit code')
+        print(info.trait_names())
+        print(info.object._codeEditor.trait_names())
+        filepath = ""
+        if info.sph_method.value == 'custom':
+            filepath = os.path.join(thispath, 'custom.py')
+        else:
+            approx_folder = os.path.join(thispath, 'approx')
+            methodname = info.sph_method.value
+            filepath = os.path.join(approx_folder, methodname + ".py")
+        info.object._codeEditor.filepath = filepath
+        fp = open(filepath)
+        lines = "".join(fp.readlines())
+        fp.close()
+        info.object._codeEditor.codeeditor = lines
+        info.object._codeEditor.configure_traits()
+
+    def object_remove_changed(self, info):
+        fname = info.runs.value
+        folder = os.path.join(base_dir, fname)
+        shutil.rmtree(folder)
+        self._enable_vis(info)
+        print("removed", folder)
+
+class CodeEditorHandler(Handler):
+    def setattr(self, info, object, name, value):
+        Handler.setattr(self, info, object, name, value)
+        info.object._updated = True
+
+    def object_save_changed(self, info):
+        filepath = info.object.filepath
+        data = info.codeeditor.value
+        fp = open(filepath, 'w')
+        fp.writelines(data)
+        fp.close()
+        print("file saved")
+
+    def object_close_changed(self, info):
+        info.ui.dispose()
+        print("Closed")

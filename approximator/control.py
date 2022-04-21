@@ -70,6 +70,12 @@ class Approximator(Application):
             )
 
         group.add_argument(
+            "--frac", action="store", dest="frac",
+            type=float, default=0.1,
+            help="frac of the perturbation"
+            )
+
+        group.add_argument(
             "--norm", action="store", dest="norm",
             type=str, default="l1",
             help='options are "l1, l2 and linf"'
@@ -87,6 +93,7 @@ class Approximator(Application):
         self.norm = self.options.norm
         self.N = self.options.N
         self.dx = self.L / self.N
+        self.frac = self.options.frac
         self._get_approx()
 
     def _get_approx(self):
@@ -96,6 +103,12 @@ class Approximator(Application):
         if self.use_sph == 'order1':
             import approx.order1 as order1
             self.approx = order1
+        if self.use_sph == 'cleary':
+            import approx.cleary as clr
+            self.approx = clr
+        if self.use_sph == 'order2':
+            import approx.order2 as order2
+            self.approx = order2
         elif self.use_sph == 'custom':
             import custom as cst
             self.approx = cst
@@ -160,11 +173,11 @@ class Approximator(Application):
 
         if self.rand == 1:
             if self.dim  > 0:
-                x += 0.1 * (np.random.random(len(x)) + 0.5)/0.5 * dx
+                x += self.frac * (np.random.random(len(x)) + 0.5)/0.5 * dx
             if self.dim > 1:
-                y += 0.1 * (np.random.random(len(x)) + 0.5)/0.5 * dx
+                y += self.frac * (np.random.random(len(x)) + 0.5)/0.5 * dx
             if self.dim > 2:
-                z += 0.1 * (np.random.random(len(x)) + 0.5)/0.5 * dx
+                z += self.frac * (np.random.random(len(x)) + 0.5)/0.5 * dx
         elif self.rand == 2:
             if self.dim == 2:
                 filename = 'nx%d.npz'%self.options.N
@@ -273,7 +286,7 @@ class Approximator(Application):
             fc = fluid.fx[0::3]
         if self.derv == 2:
             fe = self.get_function_laplace(x, y, z)
-            fc = fluid.fxx[0::9]
+            fc = fluid.fxx
         if self.derv == 3:
             fe = self.get_function_div(x, y, z)
             fc = fluid.div

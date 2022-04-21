@@ -2,3 +2,4 @@ pyqt5
 mayavi
 pysph
 wxpython
+chaco

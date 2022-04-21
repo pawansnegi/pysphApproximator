@@ -23,7 +23,9 @@ and
 The `get_equation` function return a list of SPH
 [Equations](https://pysph.readthedocs.io/en/latest/design/equations.html).
 and `get_props` returns a list of properties required in the particle
-array.
+array. Users can use `Edit code` option to edit their code. In case you
+edit a custom code, it creates a copy of your passed code to a local copy
+and that is updated while editing.
 
 The rest is pretty simple now.
 
@@ -33,6 +35,8 @@ The rest is pretty simple now.
 - `Mesh kind`: The kind of particle distribution. The `No` is a cartesian
   mesh, `perturb` denotes the randomly perturbed mesh, and `pack` is the
   packed particle distribution.
+- `Fraction`: It sets the fraction of the particle spacing to set as
+  maximum perturbation. So, 0.1 means 10% perturbation.
 - `Operator`: The discretization we are comparing approximated the
   function, gradient, Laplacian or the divergence.
 - `Is periodic`: Should we consider periodicity or not?
@@ -59,7 +63,7 @@ So the plot shows that the second order approximation is first order if
 the domain is not periodic.
 
 Now, one can use `reset` button to clear all the previous run cases to begin a new
-comparison.
+comparison. However, using the `remove` button specific runs can be removed.
 
 All this runs on [PySPH](https://github.com/pypr/pysph), So the speed is
 incredible.
