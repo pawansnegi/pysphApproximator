@@ -119,6 +119,7 @@ class ApproxHandler(Handler):
     def object_plot_changed(self, info):
         if not is_dir_empty():
             from matplotlib import pyplot as plt
+            fig = plt.figure(figsize=(12, 6))
             listdir = os.listdir(base_dir)
             norm = info.norm.value
             error = None
@@ -147,7 +148,8 @@ class ApproxHandler(Handler):
             plt.loglog(res, error[0]*res[0]**2/res**2, ":k", label=r'$O(h^2)$')
 
             plt.grid()
-            plt.legend()
+            plt.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+            plt.tight_layout(pad=1.5)
             plt.xlabel('N')
             plt.ylabel('Error')
             plt.show()
